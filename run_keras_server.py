@@ -14,6 +14,7 @@ from PIL import Image
 import numpy as np
 import flask
 import io
+import tensorflow as tf
 
 # initialize our Flask application and the Keras model
 app = flask.Flask(__name__)
@@ -25,6 +26,9 @@ def load_model():
 	# substitute in your own networks just as easily)
 	global model
 	model = ResNet50(weights="imagenet")
+		# this is key : save the graph after loading the model
+	global graph
+	graph = tf.get_default_graph()
 
 def prepare_image(image, target):
 	# if the image mode is not RGB, convert it
@@ -58,7 +62,8 @@ def predict():
 
 			# classify the input image and then initialize the list
 			# of predictions to return to the client
-			preds = model.predict(image)
+			with graph.as_default():
+				preds = model.predict(image)
 			results = imagenet_utils.decode_predictions(preds)
 			data["predictions"] = []
 
@@ -80,4 +85,4 @@ if __name__ == "__main__":
 	print(("* Loading Keras model and Flask starting server..."
 		"please wait until server has fully started"))
 	load_model()
-	app.run()
+	app.run('0.0.0.0')
